@@ -1,5 +1,6 @@
 # COUNTEN
 COUNTEN - COUNTing Enteric Neurons
+#
 1- Download Anaconda, a free installer that includes Python and all the common scientific packages.
 
 2- Clone the repository:
@@ -37,4 +38,4 @@ jupyter notebook
 
 Contact
 Subhash Kulkarni
-E-mail: skulkar9@jhmi.edu
+E-mail: skulkar9@jh.edu
