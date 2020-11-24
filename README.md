@@ -22,12 +22,19 @@ source activate name_env
 6- Install the python modules that will be required for the program:
 
 pip install numpy
+
 pip install javabridge
+
 pip install scikit-image
+
 pip install scikit-learn
+
 pip install pandas
+
 pip install ipykernel
+
 pip install bioformats
+
 pip install python-bioformats
 
 7- Make sure that you are pointing to the correct java folder:
