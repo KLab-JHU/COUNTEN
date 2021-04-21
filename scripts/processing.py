@@ -9,6 +9,8 @@ from sklearn.preprocessing import StandardScaler, binarize
 from sklearn.cluster import DBSCAN
 from sklearn.cluster import AgglomerativeClustering
 import matplotlib.pyplot as plt
+from matplotlib.patches import Ellipse
+import matplotlib.transforms as transforms
 import scipy.ndimage as ndi
 from skimage.segmentation import watershed
 from skimage.measure import regionprops
@@ -55,6 +57,32 @@ def subsample(img):
     start_y=int((y/2)-(crop_y/2))
     return img[start_x:start_x+crop_x, start_y:start_y+crop_y]
 
+def confidence_ellipse(x, y, ax, n_std=3.0, facecolor='none', **kwargs):
+    if x.size != y.size:
+        raise ValueError("x and y must be the same size")
+
+    cov = np.cov(x, y)
+    pearson = cov[0, 1]/np.sqrt(cov[0, 0] * cov[1, 1])
+
+    ell_radius_x = np.sqrt(1 + pearson)
+    ell_radius_y = np.sqrt(1 - pearson)
+    ellipse = Ellipse((0, 0), width=ell_radius_x * 2, height=ell_radius_y * 2,
+                      facecolor=facecolor, **kwargs)
+
+    scale_x = np.sqrt(cov[0, 0]) * n_std
+    mean_x = np.mean(x)
+
+    scale_y = np.sqrt(cov[1, 1]) * n_std
+    mean_y = np.mean(y)
+
+    transf = transforms.Affine2D() \
+        .rotate_deg(45) \
+        .scale(scale_x, scale_y) \
+        .translate(mean_x, mean_y)
+
+    ellipse.set_transform(transf + ax.transData)
+    return ax.add_patch(ellipse)
+
 
 def wide_clusters(img, sigma, pixel_density, min_samples,plot = True):
 
@@ -94,7 +122,7 @@ def wide_clusters(img, sigma, pixel_density, min_samples,plot = True):
     
     return (local_maxi, labels, gauss)
 
-def segmentation(img, local_maxi, labels, meta, directory, plot=True, save=False):
+def segmentation(img, local_maxi, labels, meta, directory, plot=True, plot_covariance=False, save=False):
 
     only_clusters = np.zeros(img.shape, dtype=np.int)
     for pos, new in zip(local_maxi, labels):
@@ -153,6 +181,10 @@ def segmentation(img, local_maxi, labels, meta, directory, plot=True, save=False
                 ax.annotate(prop.label,
                                 (prop.centroid[1]-5, prop.centroid[0]), color='green',
                                 fontsize=8,weight = "bold")
+                if plot_covariance:
+                    y = prop.coords[:,0]
+                    x = prop.coords[:,1]
+                    confidence_ellipse(x, y, ax, edgecolor='white')
 
             if save:
                     try:
