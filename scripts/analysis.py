@@ -1,23 +1,35 @@
 import pandas as pd
 import numpy as np
+import math
 
 def create_dataframe(ganglion_prop, labels, local_maxi, meta, directory, save=False):
     if not ganglion_prop:
-        df = pd.DataFrame(np.zeros((1,6)), columns = ['ganglion', 'Nbr of neurons',
+        df = pd.DataFrame(np.zeros((1,7)), columns = ['ganglion', 'Nbr of neurons',
                                            "surface ganglion", "major axis length",
-                                          "minor axis length", "orientation"])
+                                          "minor axis length", "orientation", "dist to nearest ganglion"])
     else:
         result = []
         intergang = 0
         label_new = np.copy(labels)
         label_new[labels == 0] = max(labels)+1
 
+        min_dists = []
         for prop in ganglion_prop:
             label = prop.label
             number_of_neurons = len(np.where(label_new == label)[0])
             
             result.append((label, number_of_neurons))
             intergang = intergang + number_of_neurons
+            
+            # inter-ganglion distance calculation
+            dists = []
+            x1,x2 = prop.centroid
+            for prop2 in ganglion_prop:
+                y1,y2 = prop2.centroid
+                dist = math.sqrt((x1-y1)**2+(x2-y2)**2)
+                if(dist > 0):
+                    dists.append(dist)
+            min_dists.append(min(dists))
             
         result = np.asarray(result)
         surface_gang = [prop.area for prop in ganglion_prop]
@@ -31,10 +43,13 @@ def create_dataframe(ganglion_prop, labels, local_maxi, meta, directory, save=Fa
         df["major axis length"] = major_gang
         df["minor axis length"] = minor_gang
         df["orientation"] = orientation_gang
+        df["dist to nearest ganglion"] = min_dists
         df.loc[:, 'major axis length']*=(meta['PhysicalSizeX'])
         df.loc[:, 'minor axis length']*=(meta['PhysicalSizeX'])
+        df.loc[:, 'dist to nearest ganglion']*=(meta['PhysicalSizeX'])
         df = df.rename(columns={"minor axis length": "minor axis length in um"})
         df = df.rename(columns={"major axis length": "major axis length in um"})
+        df = df.rename(columns={"dist to nearest ganglion": "dist to nearest ganglion in um"})
         df = df.rename(columns={"surface area": "surface area in um2"})
         
         dist = df.hist(column = ['Nbr of neurons'], bins=20)
